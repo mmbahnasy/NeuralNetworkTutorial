@@ -1,11 +1,11 @@
+
 # adapted from https://pytorch.org/tutorials/beginner/pytorch_with_examples.html 
 
 import numpy as np
-import math
 import matplotlib.pyplot as plt
 
 # Create random input and output data
-x = np.linspace(-math.pi, math.pi, 2000)
+x = np.linspace(-np.pi, np.pi, 2000)
 y_true = np.sin(x)
 
 # Random initialization
@@ -17,7 +17,6 @@ d = np.random.randn()
 def func_approx(x):
     return a + b * x + c * x ** 2 + d * x ** 3
 
-learning_rate = 1e-6
 plt.ion() # Enable interactive plotting so we can update the figure without blocking the code
 fig = plt.figure()
 ax = fig.add_subplot(111)
@@ -25,6 +24,7 @@ line1, = ax.plot(x, y_true, 'b')
 line2, = ax.plot(x, func_approx(x), 'r')
 ax.set_ylim(-2,2)
 
+learning_rate = 1e-6
 for step in range(2000):
     # Forward pass: compute predicted y
     y_approx = func_approx(x)
