@@ -67,8 +67,8 @@ class Net(nn.Module):
 
 net = Net()
 MODEL_PATH = "./mymodel.pt"
-print("Model parameters were loaded from:", MODEL_PATH)
 net.load_state_dict(torch.load(MODEL_PATH))
+print("Model parameters were loaded from:", MODEL_PATH)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
