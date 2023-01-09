@@ -55,7 +55,7 @@ class LSTMTagger(nn.Module):
         super(LSTMTagger, self).__init__()
         self.hidden_dim = hidden_dim
         self.embedding_dim = embedding_dim
-        self.rnn = nn.LSTM(embedding_dim, hidden_dim)
+        self.rnn = nn.GRU(embedding_dim, hidden_dim)
 
     def forward(self, sentence):
         lstm_out, _ = self.rnn(sentence.view(-1, 1, self.embedding_dim))
@@ -95,7 +95,7 @@ torch.save(model.state_dict(), MODEL_PATH)
 with torch.no_grad():
     correctSeq = 0
     for sentence in training_data:
-        inputs = prepare_sequence(training_data[0], word_to_ix)
+        inputs = prepare_sequence(sentence, word_to_ix)
         output = model(inputs[:-1,:]) # Feed the model of N-1 words and expect the last word
         # print("Expected word index:", inputs[-1,:].argmax(0))
         # print("Output word index:", output[-1,:].argmax(1))
