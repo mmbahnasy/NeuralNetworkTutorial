@@ -40,28 +40,28 @@ for sent in training_data:
             word_to_ix[word] = len(word_to_ix)  # Assign each word with a unique index
 print("len(word_to_ix):", len(word_to_ix))
 
-HOTVECTOR = F.one_hot(torch.arange(len(word_to_ix)))
-
 # print(HOTVECTOR)
 def prepare_sequence(seq, to_ix=word_to_ix):
-    idxs = [HOTVECTOR[to_ix[w]].reshape(1,-1) for w in seq]
-    return torch.cat(idxs, dim=0).float()
+    idxs = [to_ix[w] for w in seq]
+    return torch.tensor(idxs, dtype=torch.long)
 
 # print(prepare_sequence(training_data[2]))
 
 EMBEDDING_DIM = HIDDEN_DIM = len(word_to_ix)
 class LSTMTagger(nn.Module):
-    def __init__(self, embedding_dim, hidden_dim):
+    def __init__(self, embedding_dim, hidden_dim, vocab_size):
         super(LSTMTagger, self).__init__()
         self.hidden_dim = hidden_dim
         self.embedding_dim = embedding_dim
+        self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
         self.rnn = nn.GRU(embedding_dim, hidden_dim)
 
     def forward(self, sentence):
-        lstm_out, _ = self.rnn(sentence.view(-1, 1, self.embedding_dim))
+        embeds = self.word_embeddings(sentence)
+        lstm_out, _ = self.rnn(embeds.view(-1, 1, self.embedding_dim))
         return lstm_out
 
-model = LSTMTagger(EMBEDDING_DIM, HIDDEN_DIM)
+model = LSTMTagger(EMBEDDING_DIM, HIDDEN_DIM, len(word_to_ix))
 loss_function = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.1)
 MODEL_PATH = "./lstm_wordprediction.pt"
@@ -74,17 +74,17 @@ except:
 with torch.no_grad():
     inputs = prepare_sequence(training_data[0], word_to_ix)
     print("inputs.shape:", inputs.shape)
-    output = model(inputs[:-1,:]) # Feed the model of N-1 words and expect the last word
-    print("Expected word index:", inputs[-1,:].argmax(0))
-    print("Output word index:", output[-1,:].argmax(1))
+    output = model(inputs[:-1]) # Feed the model of N-1 words and expect the last word
+    print("Expected word index:", inputs[-1])
+    print("Output word index:", output[-1].argmax(1))
 
 for epoch in range(300):
     for sentence in training_data:
         model.zero_grad()
         sentence_in = prepare_sequence(sentence, word_to_ix)
 
-        sentence_out = model(sentence_in[:-1,:]) # input 0 to N-1 words, and train the model to generate 1 to N
-        labels = sentence_in[1:,:].argmax(1)
+        sentence_out = model(sentence_in[:-1]) # input 0 to N-1 words, and train the model to generate 1 to N
+        labels = sentence_in[1:]
         loss = loss_function(sentence_out.view(len(sentence_out),-1), labels) # Train the model to generate 1 to N
         loss.backward()
         optimizer.step()
@@ -96,9 +96,9 @@ with torch.no_grad():
     correctSeq = 0
     for sentence in training_data:
         inputs = prepare_sequence(sentence, word_to_ix)
-        output = model(inputs[:-1,:]) # Feed the model of N-1 words and expect the last word
-        # print("Expected word index:", inputs[-1,:].argmax(0))
-        # print("Output word index:", output[-1,:].argmax(1))
-        correctSeq +=1 if inputs[-1,:].argmax(0) == output[-1,:].argmax(1) else 0
+        output = model(inputs[:-1]) # Feed the model of N-1 words and expect the last word
+        # print("Expected word index:", inputs[-1].argmax(0))
+        # print("Output word index:", output[-1].argmax(1))
+        correctSeq +=1 if inputs[-1] == output[-1].argmax(1) else 0
     print("Accuracy:", correctSeq / len(training_data))
 
